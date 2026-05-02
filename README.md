@@ -1,5 +1,4 @@
 # HelloApp
 Скриншоты ниже
-![Картинка](ImagesForMD/Sokolov.jpg)
-
-![Картинка](ImagesForMD/Spisok.jpg)
+![Картинка](Photo1.jpg)
+![Картинка](Photo2.jpg)
