@@ -53,12 +53,44 @@ fun ProductScreen(isDark: Boolean, onToggleTheme: () -> Unit) {
     }
     var newProduct by remember { mutableStateOf("") }
 
+    // state for delete confirmation dialog
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var deleteIndex by remember { mutableStateOf(-1) }
+
+    // Dialog (placed here so it's in the same file/scope)
+    if (showDeleteDialog && deleteIndex in products.indices) {
+        AlertDialog(
+            onDismissRequest = {
+                showDeleteDialog = false
+                deleteIndex = -1
+            },
+            title = { Text("Удаление") },
+            text = { Text("Точно удалить товар \"${products[deleteIndex].name}\"?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    products.removeAt(deleteIndex)
+                    showDeleteDialog = false
+                    deleteIndex = -1
+                }) {
+                    Text("Да")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                    deleteIndex = -1
+                }) {
+                    Text("Нет")
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             SmallTopAppBar(
                 title = { Text("Список покупок") },
                 actions = {
-                    // Используем простой Text с эмодзи вместо проблемных иконок
                     TextButton(onClick = onToggleTheme) {
                         Text(if (isDark) "☀" else "🌙", style = MaterialTheme.typography.bodyLarge)
                     }
@@ -92,22 +124,11 @@ fun ProductScreen(isDark: Boolean, onToggleTheme: () -> Unit) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            ProductList(products = products)
-        }
-    }
-}
-
-@Composable
-fun ProductList(products: MutableList<ProductItem>) {
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        itemsIndexed(products) { index, product ->
-            ProductRow(
-                item = product,
-                onBoughtChange = { bought ->
-                    products[index] = product.copy(bought = bought)
-                },
-                onDelete = {
-                    products.removeAt(index)
+            ProductList(
+                products = products,
+                onRequestDelete = { idx ->
+                    deleteIndex = idx
+                    showDeleteDialog = true
                 }
             )
         }
@@ -115,10 +136,24 @@ fun ProductList(products: MutableList<ProductItem>) {
 }
 
 @Composable
-fun ProductRow(item: ProductItem, onBoughtChange: (Boolean) -> Unit, onDelete: () -> Unit) {
-    Card(modifier = Modifier
-        .fillMaxWidth()
-        .padding(vertical = 6.dp)
+fun ProductList(products: MutableList<ProductItem>, onRequestDelete: (Int) -> Unit) {
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        itemsIndexed(products) { index, product ->
+            ProductRow(
+                item = product,
+                onBoughtChange = { bought -> products[index] = product.copy(bought = bought) },
+                onRequestDelete = { onRequestDelete(index) }
+            )
+        }
+    }
+}
+
+@Composable
+fun ProductRow(item: ProductItem, onBoughtChange: (Boolean) -> Unit, onRequestDelete: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -131,9 +166,11 @@ fun ProductRow(item: ProductItem, onBoughtChange: (Boolean) -> Unit, onDelete: (
             Text(
                 text = item.name,
                 style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f).padding(start = 8.dp)
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 8.dp)
             )
-            IconButton(onClick = onDelete) {
+            IconButton(onClick = onRequestDelete) {
                 Icon(Icons.Default.Delete, contentDescription = "Удалить")
             }
         }
