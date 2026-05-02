@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package com.example.helloapp
 
 import android.os.Bundle
@@ -22,12 +24,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            HelloAppTheme {
+            var isDark by remember { mutableStateOf(false) }
+            HelloAppTheme(darkTheme = isDark) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ProductScreen()
+                    ProductScreen(isDark = isDark, onToggleTheme = { isDark = !isDark })
                 }
             }
         }
@@ -35,7 +38,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun ProductScreen() {
+fun ProductScreen(isDark: Boolean, onToggleTheme: () -> Unit) {
     val products = remember {
         mutableStateListOf(
             ProductItem("Хлеб"),
@@ -50,28 +53,47 @@ fun ProductScreen() {
     }
     var newProduct by remember { mutableStateOf("") }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        OutlinedTextField(
-            value = newProduct,
-            onValueChange = { newProduct = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Добавить продукт") },
-            trailingIcon = {
-                IconButton(onClick = {
-                    val trimmed = newProduct.trim()
-                    if (trimmed.isNotEmpty()) {
-                        products.add(ProductItem(trimmed))
-                        newProduct = ""
+    Scaffold(
+        topBar = {
+            SmallTopAppBar(
+                title = { Text("Список покупок") },
+                actions = {
+                    // Используем простой Text с эмодзи вместо проблемных иконок
+                    TextButton(onClick = onToggleTheme) {
+                        Text(if (isDark) "☀" else "🌙", style = MaterialTheme.typography.bodyLarge)
                     }
-                }) {
-                    Icon(Icons.Default.Add, contentDescription = "Добавить")
                 }
-            }
-        )
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp)
+        ) {
+            OutlinedTextField(
+                value = newProduct,
+                onValueChange = { newProduct = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Добавить продукт") },
+                trailingIcon = {
+                    IconButton(onClick = {
+                        val trimmed = newProduct.trim()
+                        if (trimmed.isNotEmpty()) {
+                            products.add(ProductItem(trimmed))
+                            newProduct = ""
+                        }
+                    }) {
+                        Icon(Icons.Default.Add, contentDescription = "Добавить")
+                    }
+                }
+            )
 
-        Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-        ProductList(products = products)
+            ProductList(products = products)
+        }
     }
 }
 
